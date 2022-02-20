@@ -1,0 +1,25 @@
+{
+  "name": "inmove-2022-exhibition-page",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ITB-Innovators-Move/inmove-2022-exhibition-page.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ITB-Innovators-Move/inmove-2022-exhibition-page/issues"
+  },
+  "homepage": "https://github.com/ITB-Innovators-Move/inmove-2022-exhibition-page#readme",
+  "dependencies": {
+    "dotenv": "^16.0.0",
+    "express": "^4.17.3"
+  }
+}
