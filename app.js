@@ -10,6 +10,10 @@ const port = parseInt(process.env.PORT)
 app.use(express.static('public'))
 
 // Route
+app.get('/', (req, res) => {
+    res.render('homepage.ejs')
+})
+
 app.listen(port, () => {
     console.log(`App is running on http://localhost:${port}`)
 })

@@ -20,6 +20,7 @@
   "homepage": "https://github.com/ITB-Innovators-Move/inmove-2022-exhibition-page#readme",
   "dependencies": {
     "dotenv": "^16.0.0",
+    "ejs": "^3.1.6",
     "express": "^4.17.3"
   }
 }
