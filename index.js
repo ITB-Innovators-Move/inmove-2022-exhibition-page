@@ -19,9 +19,9 @@ const connection = mysql.createConnection({
 })
 const saltRounds = parseInt(process.env.SALTROUND)
 const token = parseInt(process.env.JWT_TOKEN)
+const geprekURL = 'https://cdn.jsdelivr.net/gh/mkamadeus'
 
 // Configuration
-app.use(express.static('public'))
 app.use(bodyParser.urlencoded({
     extended: true
 }))
@@ -35,11 +35,73 @@ app.use(session({
     saveUninitialized: true
 }))
 
-// Route
+// Function
+const requireAdmin = (req, res, next) => {
+    jwt.verify(req.session.jwtTokenAdmin, token, (jwtError, jwtDecoded) => {
+        if (jwtError) {
+            res.sendStatus(401)
+        } else {
+            req.session.admin = jwtDecoded
+            next()
+        }
+    })
+}
+
+const requireLogin = (req, res, next) => {
+    jwt.verify(req.session.jwtTokenUser, token, (jwtError, jwtDecoded) => {
+        if (jwtError) {
+            res.sendStatus(401)
+        } else {
+            req.session.user = jwtDecoded
+            next()
+        }
+    })
+}
+
+// Landing Page
 app.get('/', (req, res) => {
-    res.render('homepage.ejs')
+    req.session.jwtTokenAdmin = null;
+    req.session.jwtTokenUser = null;
 })
 
+// Admin
+app.get('/admin', (req, res) => {
+    const { body } = req.body
+
+    if (body?.username && body?.password) {
+        const sqlCommand = 'SELECT Password FROM Admin WHERE Username = ?'
+
+        connection.query(sqlCommand, [body.username], (databaseError, databaseResult) => {
+            if (databaseResult.length !== 0) {
+                const encryptedPassword = databaseResult[0].password
+
+                bcrypt.compare(body.password, encryptedPassword, (hashError, hashResult) => {
+                    if (hashResult) {
+                        jwt.sign({username: body.username, password: encryptedPassword}, token, {expiresIn: '20m'}, (jwtError, jwtToken) => {
+                            req.session.jwtTokenAdmin = jwtToken
+                            req.session.jwtTokenUser = null
+
+                            res.sendStatus(200)
+                        })
+                    } else {
+                        res.sendStatus(401)
+                    }
+                })
+            }
+        })
+
+    } else {
+        res.sendStatus(400)
+    }
+})
+
+app.all('/admin/*', requireAdmin, (req, res, next) => {
+    next()
+})
+
+// User
+
+// Run app on localhost
 app.listen(port, () => {
     console.log(`App is running on http://localhost:${port}`)
 })
