@@ -17,8 +17,9 @@ const connection = mysql.createConnection({
     password: process.env.PASSWORD,
     database: process.env.DATABASE
 })
-const saltRounds = parseInt(process.env.SALTROUND)
 const token = parseInt(process.env.JWT_TOKEN)
+const adminUsername = process.env.ADMIN_USERNAME
+const adminPassword = process.env.ADMIN_PASSWORD
 const geprekURL = 'https://cdn.jsdelivr.net/gh/mkamadeus'
 
 // Configuration
@@ -68,25 +69,18 @@ app.get('/', (req, res) => {
 app.get('/admin', (req, res) => {
     const { body } = req.body
 
-    if (body?.username && body?.password) {
-        const sqlCommand = 'SELECT Password FROM Admin WHERE Username = ?'
+    if (body?.username === adminUsername && body?.password) {
+        bcrypt.compare(body.password, adminPassword, (hashError, hashResult) => {
+            if (hashResult) {
+                jwt.sign({username: body.username, password: adminPassword}, token, {expiresIn: '20m'}, (jwtError, jwtToken) => {
+                    req.session.jwtTokenAdmin = jwtToken
+                    req.session.jwtTokenUser = null
 
-        connection.query(sqlCommand, [body.username], (databaseError, databaseResult) => {
-            if (databaseResult.length !== 0) {
-                const encryptedPassword = databaseResult[0].password
-
-                bcrypt.compare(body.password, encryptedPassword, (hashError, hashResult) => {
-                    if (hashResult) {
-                        jwt.sign({username: body.username, password: encryptedPassword}, token, {expiresIn: '20m'}, (jwtError, jwtToken) => {
-                            req.session.jwtTokenAdmin = jwtToken
-                            req.session.jwtTokenUser = null
-
-                            res.sendStatus(200)
-                        })
-                    } else {
-                        res.sendStatus(401)
-                    }
+                    res.sendStatus(200)
                 })
+
+            } else {
+                res.sendStatus(401)
             }
         })
 
