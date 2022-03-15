@@ -128,6 +128,10 @@ app.get('/admin/logout', (req, res) => {
     req.session.jwtTokenAdmin = null;
 })
 
+app.get('/admin/get-team') // termasuk jumlah votenya
+
+app.get('/admin/get-all-team') // diurutkan dari jumlah votenya
+
 app.post('/admin/upload-team', multer.single('file'), (req, res, next) => {
     const { body, file } = req
 
@@ -150,7 +154,7 @@ app.post('/admin/upload-team', multer.single('file'), (req, res, next) => {
                         res.sendStatus(500)
 
                     } else {
-                        res.sendStatus(200)
+                        res.sendStatus(201)
                     }
                 }
             )
@@ -160,6 +164,10 @@ app.post('/admin/upload-team', multer.single('file'), (req, res, next) => {
         res.sendStatus(400)
     }
 })
+
+app.delete('/admin/delete-team')
+
+app.put('/admin/update-team')
 
 // User
 app.get('/user/login', (req, res) => {
@@ -210,7 +218,7 @@ app.post('/user/register', (req, res) => {
                         res.sendStatus(500)
 
                     } else {
-                        res.sendStatus(200)
+                        res.sendStatus(201)
                     }
                 }
             )
@@ -231,6 +239,12 @@ app.all('/user/*', requireLogin, (req, res, next) => {
 app.get('/user/logout', (req, res) => {
     req.session.jwtTokenUser = null;
 })
+
+app.get('/user/get-team')
+
+app.get('/user/get-all-team')
+
+app.put('/user/vote-team')
 
 // Run app on localhost
 app.listen(port, () => {
