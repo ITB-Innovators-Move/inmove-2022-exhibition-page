@@ -8,11 +8,13 @@ const cors = require('cors')
 const mysql = require('mysql')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
+const fetch = require('node-fetch')
 const { format } = require('util')
 
 const Multer = require('multer')
 const { Storage } = require('@google-cloud/storage')
 const serviceKey = require('./keys.json')
+
 
 // Global Variable
 const app = express()
@@ -80,11 +82,19 @@ const requireLogin = (req, res, next) => {
     })
 }
 
-// Landing Page
-app.get('/', (req, res) => {
-    req.session.jwtTokenAdmin = null;
-    req.session.jwtTokenUser = null;
-})
+const getDataMahasiswa = async () => {
+    const response = await fetch(checkURL)
+    const data = await response.json()
+
+    return data
+}
+
+const validDataMahasiswa = async (nama, nim) => {
+    const dataMahasiswa = await getDataMahasiswa()
+    const index = await dataMahasiswa.findIndex((mahasiswa) => {return (mahasiswa[0] === nama) && (mahasiswa[1] === nim || mahasiswa[2] === nim)})
+
+    return index !== -1
+}
 
 // Admin
 app.get('/admin', (req, res) => {
@@ -95,7 +105,6 @@ app.get('/admin', (req, res) => {
             if (hashResult) {
                 jwt.sign({username: body.username, password: adminPassword}, token, {expiresIn: '20m'}, (jwtError, jwtToken) => {
                     req.session.jwtTokenAdmin = jwtToken
-                    req.session.jwtTokenUser = null
 
                     res.sendStatus(200)
                 })
@@ -112,6 +121,10 @@ app.get('/admin', (req, res) => {
 
 app.all('/admin/*', requireAdmin, (req, res, next) => {
     next()
+})
+
+app.get('/admin/logout', (req, res) => {
+    req.session.jwtTokenAdmin = null;
 })
 
 app.post('/admin/upload', multer.single('file'), (req, res, next) => {
@@ -162,6 +175,35 @@ app.post('/admin/upload', multer.single('file'), (req, res, next) => {
 })
 
 // User
+app.get('/user', async (req, res) => {
+    const { body } = req
+
+    if (body?.name && body?.idStudent) {
+        const valid = await validDataMahasiswa(body.name, body.idStudent)
+
+        if (valid) {
+            jwt.sign({name: body.name, idStudent: body.idStudent}, token, {expiresIn: '20m'}, (jwtError, jwtToken) => {
+                req.session.jwtTokenUser = jwtToken
+
+                res.sendStatus(200)
+            })
+
+        } else {
+            res.sendStatus(401)
+        }
+        
+    } else {
+        res.sendStatus(400)
+    }
+})
+
+app.all('/user/*', requireLogin, (req, res, next) => {
+    next()
+})
+
+app.get('/user/logout', (req, res) => {
+    req.session.jwtTokenUser = null;
+})
 
 // Run app on localhost
 app.listen(port, () => {
