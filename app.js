@@ -8,7 +8,6 @@ const cors = require('cors')
 const mysql = require('mysql')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
-const fetch = require('node-fetch')
 const { format } = require('util')
 
 const Multer = require('multer')
@@ -24,7 +23,6 @@ const token = parseInt(process.env.JWT_TOKEN)
 const adminUsername = process.env.ADMIN_USERNAME
 const adminPassword = process.env.ADMIN_PASSWORD
 const maxSize = parseInt(process.env.MAX_SIZE)
-const checkURL = process.env.NAMA_NIM_URL
 
 const connection = mysql.createConnection({
     host: process.env.HOST,
@@ -44,6 +42,8 @@ const multer = Multer({
     }
 })
 const bucket = storage.bucket(process.env.GCLOUD_STORAGE_BUCKET)
+
+const dataMahasiswa = require('./data.json')
 
 // Configuration
 app.use(bodyParser.urlencoded({
@@ -82,16 +82,8 @@ const requireLogin = (req, res, next) => {
     })
 }
 
-const getDataMahasiswa = async () => {
-    const response = await fetch(checkURL)
-    const data = await response.json()
-
-    return data
-}
-
-const validDataMahasiswa = async (nama, nim) => {
-    const dataMahasiswa = await getDataMahasiswa()
-    const index = await dataMahasiswa.findIndex((mahasiswa) => {return (mahasiswa[0] === nama) && (mahasiswa[1] === nim || mahasiswa[2] === nim)})
+const validDataMahasiswa = (nama, nim) => {
+    const index = dataMahasiswa.findIndex((mahasiswa) => {return (mahasiswa[0] === nama) && (mahasiswa[1] === nim || mahasiswa[2] === nim)})
 
     return index !== -1
 }
@@ -175,11 +167,11 @@ app.post('/admin/upload', multer.single('file'), (req, res, next) => {
 })
 
 // User
-app.get('/user', async (req, res) => {
+app.get('/user', (req, res) => {
     const { body } = req
 
     if (body?.name && body?.idStudent) {
-        const valid = await validDataMahasiswa(body.name, body.idStudent)
+        const valid = validDataMahasiswa(body.name, body.idStudent)
 
         if (valid) {
             jwt.sign({name: body.name, idStudent: body.idStudent}, token, {expiresIn: '20m'}, (jwtError, jwtToken) => {
