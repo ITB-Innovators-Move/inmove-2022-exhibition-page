@@ -61,8 +61,8 @@ CREATE TABLE `team` (
   `Title` varchar(256) NOT NULL,
   `Name` varchar(256) NOT NULL,
   `Type` enum('Business Plan','Innovation Competition') NOT NULL,
-  `Description` longtext,
-  `LinkToHeader` varchar(512) DEFAULT NULL,
+  `Description` longtext NOT NULL,
+  `LinkToHeader` varchar(512) NOT NULL,
   PRIMARY KEY (`IDTeam`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -89,6 +89,8 @@ CREATE TABLE `voter` (
   `IDStudent` varchar(8) NOT NULL,
   `IDTeam` int unsigned DEFAULT NULL,
   PRIMARY KEY (`IDVoter`),
+  UNIQUE KEY `Name` (`Name`),
+  UNIQUE KEY `IDStudent` (`IDStudent`),
   KEY `IDTeam` (`IDTeam`),
   CONSTRAINT `voter_ibfk_1` FOREIGN KEY (`IDTeam`) REFERENCES `team` (`IDTeam`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -112,4 +114,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2022-03-15 12:49:17
+-- Dump completed on 2022-03-16  1:42:51

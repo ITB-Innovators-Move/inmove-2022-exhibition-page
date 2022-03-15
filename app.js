@@ -14,12 +14,11 @@ const Multer = require('multer')
 const { Storage } = require('@google-cloud/storage')
 const serviceKey = require('./keys.json')
 
-
 // Global Variable
 const app = express()
 
 const port = parseInt(process.env.PORT)
-const token = parseInt(process.env.JWT_TOKEN)
+const token = process.env.JWT_TOKEN
 const adminUsername = process.env.ADMIN_USERNAME
 const adminPassword = process.env.ADMIN_PASSWORD
 const maxSize = parseInt(process.env.MAX_SIZE)
@@ -64,6 +63,7 @@ const requireAdmin = (req, res, next) => {
     jwt.verify(req.session.jwtTokenAdmin, token, (jwtError, jwtDecoded) => {
         if (jwtError) {
             res.sendStatus(401)
+
         } else {
             req.session.admin = jwtDecoded
             next()
@@ -75,9 +75,11 @@ const requireLogin = (req, res, next) => {
     jwt.verify(req.session.jwtTokenUser, token, (jwtError, jwtDecoded) => {
         if (jwtError) {
             res.sendStatus(401)
+
         } else {
             req.session.user = jwtDecoded
             next()
+
         }
     })
 }
@@ -89,16 +91,23 @@ const validDataMahasiswa = (nama, nim) => {
 }
 
 // Admin
-app.get('/admin', (req, res) => {
+app.get('/admin/login', (req, res) => {
     const { body } = req
 
     if (body?.username === adminUsername && body?.password) {
         bcrypt.compare(body.password, adminPassword, (hashError, hashResult) => {
-            if (hashResult) {
-                jwt.sign({username: body.username, password: adminPassword}, token, {expiresIn: '20m'}, (jwtError, jwtToken) => {
-                    req.session.jwtTokenAdmin = jwtToken
+            if (hashError) {
+                res.sendStatus(500)
 
-                    res.sendStatus(200)
+            } else if (hashResult) {
+                jwt.sign({username: body.username, password: adminPassword}, token, {expiresIn: '20m'}, (jwtError, jwtToken) => {
+                    if (jwtError) {
+                        res.sendStatus(401)
+
+                    } else  {
+                        req.session.jwtTokenAdmin = jwtToken
+                        res.sendStatus(200)
+                    }
                 })
 
             } else {
@@ -119,47 +128,33 @@ app.get('/admin/logout', (req, res) => {
     req.session.jwtTokenAdmin = null;
 })
 
-app.post('/admin/upload', multer.single('file'), (req, res, next) => {
+app.post('/admin/upload-team', multer.single('file'), (req, res, next) => {
     const { body, file } = req
 
-    if (body?.title && body?.name && body?.type) {
-        if (file) {
-            const blob = bucket.file(file.originalname)
-            const blobStream = blob.createWriteStream()
+    if (body?.title && body?.name && body?.type && body?.description && file) {
+        const blob = bucket.file(file.originalname)
+        const blobStream = blob.createWriteStream()
 
-            blobStream.on('error', (blobStreamError) => {
-                next(blobStreamError)
-            })
+        blobStream.on('error', (blobStreamError) => {
+            next(blobStreamError)
+        })
 
-            blobStream.on('finish', () => {
-                const publicURL = format(`https://storage.googleapis.com/${bucket.name}/${blob.name}`)
+        blobStream.on('finish', () => {
+            const publicURL = format(`https://storage.googleapis.com/${bucket.name}/${blob.name}`)
 
-                connection.query(
-                    'INSERT INTO Team (Title, Name, Type, Description, LinkToHeader) values (?, ?, ?, ?, ?)', 
-                    [body.title, body.name, body.type, body.description, publicURL], 
-                    (databaseError, databaseResults) => {
-                        if (databaseError) {
-                            res.sendStatus(500)
-                        } else {
-                            res.sendStatus(200)
-                        }
-                    }
-                )
-            })
-
-        } else {
             connection.query(
-                'INSERT INTO Team (Title, Name, Type, Description) values (?, ?, ?, ?)', 
-                [body.title, body.name, body.type, body.description],
+                'INSERT INTO Team (Title, Name, Type, Description, LinkToHeader) values (?, ?, ?, ?, ?)', 
+                [body.title, body.name, body.type, body.description, publicURL], 
                 (databaseError, databaseResults) => {
                     if (databaseError) {
                         res.sendStatus(500)
+
                     } else {
                         res.sendStatus(200)
                     }
                 }
             )
-        }
+        })
 
     } else {
         res.sendStatus(400)
@@ -167,18 +162,58 @@ app.post('/admin/upload', multer.single('file'), (req, res, next) => {
 })
 
 // User
-app.get('/user', (req, res) => {
+app.get('/user/login', (req, res) => {
     const { body } = req
 
     if (body?.name && body?.idStudent) {
-        const valid = validDataMahasiswa(body.name, body.idStudent)
+        connection.query(
+            'SELECT Name, IDStudent FROM Voter WHERE Name = ? AND IDStudent = ?',
+            [body.name, body.idStudent],
+            (databaseError, databaseResults) => {
+                if (databaseError) {
+                    res.sendStatus(500)
 
-        if (valid) {
-            jwt.sign({name: body.name, idStudent: body.idStudent}, token, {expiresIn: '20m'}, (jwtError, jwtToken) => {
-                req.session.jwtTokenUser = jwtToken
+                } else {
+                    if (databaseResults.length !== 0) {
+                        jwt.sign({name: body.name, idStudent: body.idStudent}, token, {expiresIn: '20m'}, (jwtError, jwtDecoded) => {
+                            if (jwtError) {
+                                res.sendStatus(401)
 
-                res.sendStatus(200)
-            })
+                            } else {
+                                req.session.jwtTokenUser = jwtDecoded
+                                res.sendStatus(200)
+                            }
+                        })
+
+                    } else {
+                        res.sendStatus(401)
+                    }
+                }
+            }
+        )
+        
+    } else {
+        res.sendStatus(400)
+    }
+})
+
+app.post('/user/register', (req, res) => {
+    const { body } = req
+
+    if (body?.name && body?.idStudent) {
+        if (validDataMahasiswa(body.name, body.idStudent)) {
+            connection.query(
+                'INSERT INTO Voter (Name, IDStudent) values (?, ?)',
+                [body.name, body.idStudent],
+                (databaseError, databaseResults) => {
+                    if (databaseError) {
+                        res.sendStatus(500)
+
+                    } else {
+                        res.sendStatus(200)
+                    }
+                }
+            )
 
         } else {
             res.sendStatus(401)
