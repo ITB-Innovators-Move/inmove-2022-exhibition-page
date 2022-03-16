@@ -286,11 +286,74 @@ app.get('/user/logout', (req, res) => {
     req.session.jwtTokenUser = null;
 })
 
-app.get('/user/get-team')
+app.get('/user/get-team', (req, res) => {
+    const { body } = req
 
-app.get('/user/get-all-team')
+    if (body?.idTeam) {
+        connection.query(
+            'SELECT * FROM Team WHERE IDTeam = ?',
+            [body.idTeam],
+            (databaseError, databaseResults) => {
+                if (databaseError) {
+                    res.sendStatus(500)
 
-app.put('/user/vote-team')
+                } else {
+                    res.status(200).json(databaseResults)
+                }
+            }
+        )
+
+    } else {
+        res.sendStatus(400)
+    }
+})
+
+app.get('/user/get-all-team', (req, res) => {
+    const { body } = req
+
+    if (body?.type) {
+        connection.query(
+            'SELECT * FROM Team WHERE Type = ?',
+            [body.type],
+            (databaseError, databaseResults) => {
+                if (databaseError) {
+                    res.sendStatus(500)
+
+                } else {
+                    res.status(200).json(databaseResults)
+                }
+            }
+        )
+
+    } else {
+        res.sendStatus(400)
+    }
+})
+
+app.get('/user/vote-team/:idstudent', requireLogin, (req, res) => {
+    const sql_query = `SELECT * FROM voter NATURAL INNER JOIN  WHERE IDStudent = ?`
+    connection.query(sql_query, [req.params.idstudent], (databaseError, databaseResults) => {
+        if (databaseError) {
+            res.sendStatus(500)
+        } else {
+            res.status(200).json(databaseResults)
+        }
+    })
+})
+
+app.put('/user/vote-team', (req,res) => {
+    const {name, idstudent, idteam} = req.body;
+
+    const sql_query = `INSERT INTO voter (Name, IDStudent, IDTeam) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE IDTeam = VALUES(IDTeam);`
+
+    connection.query(sql_query, [name, idstudent, idteam], (databaseError, databaseResults) => {
+        if (databaseError) {
+            res.sendStatus(500)
+        } else {
+            res.status(200).message('Success insert data')
+        }
+    })
+})
 
 // Run app on localhost
 app.listen(port, () => {
