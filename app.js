@@ -128,9 +128,49 @@ app.get('/admin/logout', (req, res) => {
     req.session.jwtTokenAdmin = null;
 })
 
-app.get('/admin/get-team') // termasuk jumlah votenya
+app.get('/admin/get-team', (req, res) => {
+    const { body } = req
 
-app.get('/admin/get-all-team') // diurutkan dari jumlah votenya
+    if (body?.idTeam) {
+        connection.query(
+            'SELECT IDTeam, Title, Name, Type, Description, LinkToHeader, COUNT(IDVoter) AS JumlahVote FROM Team NATURAL LEFT JOIN Voter WHERE IDTeam = ? GROUP BY IDTeam',
+            [body.idTeam],
+            (databaseError, databaseResults) => {
+                if (databaseError) {
+                    res.sendStatus(500)
+
+                } else {
+                    res.status(200).json(databaseResults)
+                }
+            }
+        )
+
+    } else {
+        res.sendStatus(400)
+    }
+})
+
+app.get('/admin/get-all-team', (req, res) => {
+    const { body } = req
+
+    if (body?.type) {
+        connection.query(
+            'SELECT IDTeam, Title, Name, Type, Description, LinkToHeader, COUNT(IDVoter) AS JumlahVote FROM Team NATURAL LEFT JOIN Voter WHERE Type = ? GROUP BY IDTeam ORDER BY COUNT(IDVoter) DESC',
+            [body.type],
+            (databaseError, databaseResults) => {
+                if (databaseError) {
+                    res.sendStatus(500)
+
+                } else {
+                    res.status(200).json(databaseResults)
+                }
+            }
+        )
+
+    } else {
+        res.sendStatus(400)
+    }
+})
 
 app.post('/admin/upload-team', multer.single('file'), (req, res, next) => {
     const { body, file } = req
@@ -169,13 +209,19 @@ app.delete('/admin/delete-team')
 
 app.put('/admin/update-team')
 
+app.get('/admin/get-picture')
+
+app.post('/admin/upload-picture')
+
+app.delete('/admin/delete-picture')
+
 // User
 app.get('/user/login', (req, res) => {
     const { body } = req
 
     if (body?.name && body?.idStudent) {
         connection.query(
-            'SELECT Name, IDStudent FROM Voter WHERE Name = ? AND IDStudent = ?',
+            'SELECT * FROM Voter WHERE Name = ? AND IDStudent = ?',
             [body.name, body.idStudent],
             (databaseError, databaseResults) => {
                 if (databaseError) {
@@ -183,7 +229,7 @@ app.get('/user/login', (req, res) => {
 
                 } else {
                     if (databaseResults.length !== 0) {
-                        jwt.sign({name: body.name, idStudent: body.idStudent}, token, {expiresIn: '20m'}, (jwtError, jwtDecoded) => {
+                        jwt.sign({name: body.name, idStudent: body.idStudent, idTeam: databaseResults[0].IDTeam}, token, {expiresIn: '20m'}, (jwtError, jwtDecoded) => {
                             if (jwtError) {
                                 res.sendStatus(401)
 
