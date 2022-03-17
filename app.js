@@ -12,7 +12,6 @@ const { format } = require('util')
 
 const Multer = require('multer')
 const { Storage } = require('@google-cloud/storage')
-const serviceKey = require('./keys.json')
 
 // Global Variable
 const app = express()
@@ -31,7 +30,7 @@ const connection = mysql.createConnection({
 })
 
 const storage = new Storage({
-    keyFilename: serviceKey,
+    keyFilename: './keys.json',
     projectId: 'exhibition-page'
 })
 const multer = Multer({
@@ -79,7 +78,6 @@ const requireLogin = (req, res, next) => {
         } else {
             req.session.user = jwtDecoded
             next()
-
         }
     })
 }
@@ -125,7 +123,7 @@ app.all('/admin/*', requireAdmin, (req, res, next) => {
 })
 
 app.get('/admin/logout', (req, res) => {
-    req.session.jwtTokenAdmin = null;
+    req.session.jwtTokenAdmin = null
 })
 
 app.get('/admin/get-team', (req, res) => {
@@ -155,7 +153,7 @@ app.get('/admin/get-all-team', (req, res) => {
 
     if (body?.type) {
         connection.query(
-            'SELECT IDTeam, Title, Team.Name, Type, Description, LinkToHeader, COUNT(IDVoter) AS JumlahVote FROM Team LEFT JOIN Voter USING (IDTeam) WHERE Type = ? GROUP BY IDTeam ORDER BY COUNT(IDVoter) DESC;',
+            'SELECT IDTeam, Title, Team.Name, Type, Description, LinkToHeader, COUNT(IDVoter) AS JumlahVote FROM Team LEFT JOIN Voter USING (IDTeam) WHERE Type = ? GROUP BY IDTeam ORDER BY COUNT(IDVoter) DESC',
             [body.type],
             (databaseError, databaseResults) => {
                 if (databaseError) {
@@ -175,7 +173,7 @@ app.get('/admin/get-all-team', (req, res) => {
 app.post('/admin/upload-team', multer.single('file'), (req, res, next) => {
     const { body, file } = req
 
-    if (body?.title && body?.name && body?.type && body?.description && file) {
+    if (body?.title && body?.name && body?.type && body?.description && file.size != 0) {
         const blob = bucket.file(file.originalname)
         const blobStream = blob.createWriteStream()
 
@@ -200,6 +198,8 @@ app.post('/admin/upload-team', multer.single('file'), (req, res, next) => {
             )
         })
 
+        blobStream.end(file.buffer)
+
     } else {
         res.sendStatus(400)
     }
@@ -209,7 +209,26 @@ app.delete('/admin/delete-team')
 
 app.put('/admin/update-team')
 
-app.get('/admin/get-picture')
+app.get('/admin/get-picture', (req, res) => {
+    const { body } = req
+
+    if (body?.idTeam) {
+        connection.query(
+            'SELECT LinkToImage FROM Picture WHERE IDTeam = ?',
+            [body.idTeam],
+            (databaseError, databaseResults) => {
+                if (databaseError) {
+                    res.sendStatus(500)
+                } else {
+                    res.status(200).json(databaseResults)
+                }
+            }
+        )
+
+    } else {
+        res.sendStatus(400)
+    }
+})
 
 app.post('/admin/upload-picture')
 
@@ -283,7 +302,7 @@ app.all('/user/*', requireLogin, (req, res, next) => {
 })
 
 app.get('/user/logout', (req, res) => {
-    req.session.jwtTokenUser = null;
+    req.session.jwtTokenUser = null
 })
 
 app.get('/user/get-team', (req, res) => {
@@ -330,29 +349,47 @@ app.get('/user/get-all-team', (req, res) => {
     }
 })
 
-app.get('/user/vote-team/:idstudent', requireLogin, (req, res) => {
-    const sql_query = `SELECT * FROM voter JOIN team USING (IDTeam) WHERE IDStudent = ?`
-    connection.query(sql_query, [req.params.idstudent], (databaseError, databaseResults) => {
-        if (databaseError) {
-            res.sendStatus(500)
-        } else {
-            res.status(200).json(databaseResults)
-        }
-    })
+app.get('/user/get-vote-team', (req, res) => {
+    const { body } = req
+
+    if (body?.idStudent) {
+        connection.query(
+            'SELECT IDTeam FROM Voter JOIN Team USING (IDTeam) WHERE IDStudent = ?',
+            [body.idStudent],
+            (databaseError, databaseResults) => {
+                if (databaseError) {
+                    res.sendStatus(500)
+
+                } else {
+                    res.send(200).json(databaseResults)
+                }
+            }
+        )
+
+    } else {
+        res.sendStatus(400)
+    }
 })
 
-app.put('/user/vote-team', (req,res) => {
-    const {name, idstudent, idteam} = req.body;
+app.put('/user/update-vote-team', (req,res) => {
+    const { body } = req
 
-    const sql_query = `UPDATE voter SET IDTeam = ? WHERE IDStudent = ? AND Name = ?`
+    if (body?.name && body?.idStudent && body?.idTeam) {
+        connection.query(
+            'UPDATE Voter SET IDTeam = ? WHERE Name = ? AND IDStudent = ?', 
+            [body?.idTeam, body?.name, body?.idTeam], 
+            (databaseError, databaseResults) => {
+                if (databaseError) {
+                    res.sendStatus(500)
+                } else {
+                    res.sendStatus(200)
+                }
+            }
+        )
 
-    connection.query(sql_query, [idteam, idstudent, name], (databaseError, databaseResults) => {
-        if (databaseError) {
-            res.sendStatus(500)
-        } else {
-            res.status(200).message('Success update data')
-        }
-    })
+    } else {
+        res.sendStatus(400)
+    }
 })
 
 // Run app on localhost
