@@ -230,7 +230,44 @@ app.get('/admin/get-picture', (req, res) => {
     }
 })
 
-app.post('/admin/upload-picture')
+app.post('/admin/upload-picture', multer.array('file'), (req, res, next) => {
+    const { body, files } = req
+
+    if (body?.idTeam && files.length != 0) {
+        console.log(files)
+
+        files.forEach((file) => {
+            const blob = bucket.file(file.originalname)
+            const blobStream = blob.createWriteStream()
+
+            blobStream.on('error', (blobStreamError) => {
+                next(blobStreamError)
+            })
+
+            blobStream.on('finish', () => {
+                const publicURL = format(`https://storage.googleapis.com/${bucket.name}/${blob.name}`)
+
+                connection.query(
+                    'INSERT INTO Picture (IDTeam, LinkToImage) values (?, ?)',
+                    [body.idTeam, publicURL],
+                    (databaseError, databaseResults) => {
+                        if (databaseError) {
+                            res.sendStatus(500)
+    
+                        } else {
+                            res.sendStatus(201)
+                        }
+                    }
+                )
+            })
+
+            blobStream.end(file.buffer)
+        })
+
+    } else {
+        res.sendStatus(400)
+    }
+})
 
 app.delete('/admin/delete-picture')
 
