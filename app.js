@@ -133,7 +133,7 @@ app.get('/admin/get-team', (req, res) => {
 
     if (body?.idTeam) {
         connection.query(
-            'SELECT IDTeam, Title, Name, Type, Description, LinkToHeader, COUNT(IDVoter) AS JumlahVote FROM Team NATURAL LEFT JOIN Voter WHERE IDTeam = ? GROUP BY IDTeam',
+            'SELECT IDTeam, Title, Team.Name, Type, Description, LinkToHeader, COUNT(IDVoter) AS JumlahVote FROM Team LEFT JOIN Voter USING (IDTeam) WHERE IDTeam = ? GROUP BY IDTeam',
             [body.idTeam],
             (databaseError, databaseResults) => {
                 if (databaseError) {
@@ -155,7 +155,7 @@ app.get('/admin/get-all-team', (req, res) => {
 
     if (body?.type) {
         connection.query(
-            'SELECT IDTeam, Title, Name, Type, Description, LinkToHeader, COUNT(IDVoter) AS JumlahVote FROM Team NATURAL LEFT JOIN Voter WHERE Type = ? GROUP BY IDTeam ORDER BY COUNT(IDVoter) DESC',
+            'SELECT IDTeam, Title, Team.Name, Type, Description, LinkToHeader, COUNT(IDVoter) AS JumlahVote FROM Team LEFT JOIN Voter USING (IDTeam) WHERE Type = ? GROUP BY IDTeam ORDER BY COUNT(IDVoter) DESC;',
             [body.type],
             (databaseError, databaseResults) => {
                 if (databaseError) {
@@ -331,7 +331,7 @@ app.get('/user/get-all-team', (req, res) => {
 })
 
 app.get('/user/vote-team/:idstudent', requireLogin, (req, res) => {
-    const sql_query = `SELECT * FROM voter NATURAL INNER JOIN  WHERE IDStudent = ?`
+    const sql_query = `SELECT * FROM voter JOIN team USING (IDTeam) WHERE IDStudent = ?`
     connection.query(sql_query, [req.params.idstudent], (databaseError, databaseResults) => {
         if (databaseError) {
             res.sendStatus(500)
@@ -344,7 +344,7 @@ app.get('/user/vote-team/:idstudent', requireLogin, (req, res) => {
 app.put('/user/vote-team', (req,res) => {
     const {name, idstudent, idteam} = req.body;
 
-    const sql_query = `INSERT INTO voter (Name, IDStudent, IDTeam) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE IDTeam = VALUES(IDTeam);`
+    const sql_query = `INSERT INTO voter (Name, IDStudent, IDTeam) VALUES (?, ?, ?) AS NewVote ON DUPLICATE KEY UPDATE IDTeam = NewVote.IDTeam;`
 
     connection.query(sql_query, [name, idstudent, idteam], (databaseError, databaseResults) => {
         if (databaseError) {
