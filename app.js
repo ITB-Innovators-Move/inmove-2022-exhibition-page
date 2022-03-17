@@ -344,13 +344,13 @@ app.get('/user/vote-team/:idstudent', requireLogin, (req, res) => {
 app.put('/user/vote-team', (req,res) => {
     const {name, idstudent, idteam} = req.body;
 
-    const sql_query = `INSERT INTO voter (Name, IDStudent, IDTeam) VALUES (?, ?, ?) AS NewVote ON DUPLICATE KEY UPDATE IDTeam = NewVote.IDTeam;`
+    const sql_query = `UPDATE voter SET IDTeam = ? WHERE IDStudent = ? AND Name = ?`
 
-    connection.query(sql_query, [name, idstudent, idteam], (databaseError, databaseResults) => {
+    connection.query(sql_query, [idteam, idstudent, name], (databaseError, databaseResults) => {
         if (databaseError) {
             res.sendStatus(500)
         } else {
-            res.status(200).message('Success insert data')
+            res.status(200).message('Success update data')
         }
     })
 })
