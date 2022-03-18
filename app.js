@@ -285,7 +285,7 @@ app.get('/user/login', (req, res) => {
 
                 } else {
                     if (databaseResults.length !== 0) {
-                        jwt.sign({name: body.name, idStudent: body.idStudent, idTeam: databaseResults[0].IDTeam}, token, {expiresIn: '20m'}, (jwtError, jwtDecoded) => {
+                        jwt.sign({name: body.name, idStudent: body.idStudent}, token, {expiresIn: '20m'}, (jwtError, jwtDecoded) => {
                             if (jwtError) {
                                 res.sendStatus(401)
 
@@ -387,37 +387,33 @@ app.get('/user/get-all-team', (req, res) => {
 })
 
 app.get('/user/get-vote-team', (req, res) => {
-    const { body } = req
+    const { session } = req
 
-    if (body?.idStudent) {
-        connection.query(
-            'SELECT IDTeam FROM Voter JOIN Team USING (IDTeam) WHERE IDStudent = ?',
-            [body.idStudent],
-            (databaseError, databaseResults) => {
-                if (databaseError) {
-                    res.sendStatus(500)
+    connection.query(
+        'SELECT IDTeam FROM Voter WHERE Name = ? AND IDStudent = ?',
+        [session.user.name, session.user.idStudent],
+        (databaseError, databaseResults) => {
+            if (databaseError) {
+                res.sendStatus(500)
 
-                } else {
-                    res.send(200).json(databaseResults)
-                }
+            } else {
+                res.status(200).json(databaseResults)
             }
-        )
-
-    } else {
-        res.sendStatus(400)
-    }
+        }
+    )
 })
 
-app.put('/user/update-vote-team', (req,res) => {
-    const { body } = req
+app.put('/user/update-vote-team', (req, res) => {
+    const { body, session } = req
 
-    if (body?.name && body?.idStudent && body?.idTeam) {
+    if (body?.idTeam) {
         connection.query(
             'UPDATE Voter SET IDTeam = ? WHERE Name = ? AND IDStudent = ?', 
-            [body?.idTeam, body?.name, body?.idTeam], 
+            [body?.idTeam, session.user.name, session.user.idStudent], 
             (databaseError, databaseResults) => {
                 if (databaseError) {
                     res.sendStatus(500)
+                    
                 } else {
                     res.sendStatus(200)
                 }
