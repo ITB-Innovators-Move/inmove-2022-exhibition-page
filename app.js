@@ -205,9 +205,50 @@ app.post('/admin/upload-team', multer.single('file'), (req, res, next) => {
     }
 })
 
-app.delete('/admin/delete-team')
+app.delete('/admin/delete-team', (req, res) => {
+    const { idTeam } = req.body
 
-app.put('/admin/update-team')
+    connection.query(
+        'UPDATE Voter SET IDTeam = NULL WHERE IDTeam = ?',
+        [idTeam],
+        (databaseError, databaseResults) => {
+            if (databaseError) {
+                res.sendStatus(500)
+
+            } else {
+                connection.query(
+                    'DELETE FROM Team WHERE IDTeam = ?',
+                    [idTeam],
+                    (databaseError, databaseResults) => {
+                        if (databaseError) {
+                            res.sendStatus(500)
+
+                        } else {
+                            res.sendStatus(200)
+                        }
+                    }
+                )
+            }
+        }
+    )
+})
+
+app.put('/admin/update-team', (req, res) => {
+    const { idTeam, title, name, type, description } = req.body
+
+    connection.query(
+        'UPDATE Team SET Title = ?, Name = ?, Type = ?, Description = ? WHERE IDTeam = ?',
+        [title, name, type, description, idTeam],
+        (databaseError, databaseResults) => {
+            if (databaseError) {
+                res.sendStatus(500)
+
+            } else {
+                res.sendStatus(200)
+            }
+        }
+    )
+})
 
 app.get('/admin/get-picture', (req, res) => {
     const { body } = req
