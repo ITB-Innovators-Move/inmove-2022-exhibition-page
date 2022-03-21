@@ -98,7 +98,7 @@ app.get('/admin/login', (req, res) => {
                 res.sendStatus(500)
 
             } else if (hashResult) {
-                jwt.sign({username: body.username, password: adminPassword}, token, {expiresIn: '20m'}, (jwtError, jwtToken) => {
+                jwt.sign({username: body.username, password: adminPassword}, token, {expiresIn: '1h'}, (jwtError, jwtToken) => {
                     if (jwtError) {
                         res.sendStatus(401)
 
@@ -419,7 +419,7 @@ app.get('/user/login', (req, res) => {
 
                 } else {
                     if (databaseResults.length !== 0) {
-                        jwt.sign({name: body.name, idStudent: body.idStudent}, token, {expiresIn: '20m'}, (jwtError, jwtDecoded) => {
+                        jwt.sign({name: body.name, idStudent: body.idStudent}, token, {expiresIn: '1h'}, (jwtError, jwtDecoded) => {
                             if (jwtError) {
                                 res.sendStatus(401)
 
