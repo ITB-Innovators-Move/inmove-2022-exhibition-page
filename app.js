@@ -173,7 +173,7 @@ app.get('/admin/get-all-team', (req, res) => {
 app.post('/admin/upload-team', multer.single('file'), (req, res, next) => {
     const { body, file } = req
 
-    if (body?.title && body?.name && body?.type && body?.description && file.size != 0) {
+    if (body?.title && body?.name && body?.type && body?.description && file?.size != 0) {
         const blob = bucket.file(file.originalname)
         const blobStream = blob.createWriteStream()
 
@@ -206,48 +206,102 @@ app.post('/admin/upload-team', multer.single('file'), (req, res, next) => {
 })
 
 app.delete('/admin/delete-team', (req, res) => {
-    const { idTeam } = req.body
+    const { body } = req
 
-    connection.query(
-        'UPDATE Voter SET IDTeam = NULL WHERE IDTeam = ?',
-        [idTeam],
-        (databaseError, databaseResults) => {
-            if (databaseError) {
-                res.sendStatus(500)
+    if (body?.idTeam) {
+        connection.query(
+            'SELECT LinkToHeader FROM Team WHERE IDTeam = ?',
+            [body.idTeam],
+            (databaseError, databaseResults) => {
+                if (databaseError) {
+                    res.sendStatus(500)
 
-            } else {
-                connection.query(
-                    'DELETE FROM Team WHERE IDTeam = ?',
-                    [idTeam],
-                    (databaseError, databaseResults) => {
-                        if (databaseError) {
+                } else {
+                    const linkToHeader = databaseResults[0].LinkToHeader
+                    const fileName = linkToHeader.substring(linkToHeader.lastIndexOf('/') + 1)
+
+                    bucket.file(fileName).delete((deleteError, deleteAPIResponse) => {
+                        if (deleteError) {
                             res.sendStatus(500)
 
                         } else {
-                            res.sendStatus(200)
+                            connection.query(
+                                'DELETE FROM Team WHERE IDTeam = ?',
+                                [body.idTeam],
+                                (databaseError, databaseResults) => {
+                                    if (databaseError) {
+                                        res.sendStatus(500)
+                    
+                                    } else {
+                                        res.sendStatus(200)
+                                    }
+                                }
+                            )
                         }
-                    }
-                )
+                    })
+                }
             }
-        }
-    )
+        )
+
+    } else {
+        res.sendStatus(400)
+    }
 })
 
-app.put('/admin/update-team', (req, res) => {
-    const { idTeam, title, name, type, description } = req.body
+app.put('/admin/update-team', multer.single('file'), (req, res, next) => {
+    const { body, file } = req
 
-    connection.query(
-        'UPDATE Team SET Title = ?, Name = ?, Type = ?, Description = ? WHERE IDTeam = ?',
-        [title, name, type, description, idTeam],
-        (databaseError, databaseResults) => {
-            if (databaseError) {
-                res.sendStatus(500)
+    if (body?.idTeam && body?.title && body?.name && body?.type && body?.description && file?.size != 0 ) {
+        connection.query(
+            'SELECT LinkToHeader FROM Team WHERE IDTeam = ?',
+            [body.idTeam],
+            (databaseError, databaseResults) => {
+                if (databaseError) {
+                    res.sendStatus(500)
 
-            } else {
-                res.sendStatus(200)
+                } else {
+                    const linkToHeader = databaseResults[0].LinkToHeader
+                    const fileName = linkToHeader.substring(linkToHeader.lastIndexOf('/') + 1)
+
+                    bucket.file(fileName).delete((deleteError, deleteAPIResponse) => {
+                        if (deleteError) {
+                            res.sendStatus(500)
+
+                        } else {
+                            const blob = bucket.file(file.originalname)
+                            const blobStream = blob.createWriteStream()
+
+                            blobStream.on('error', (blobStreamError) => {
+                                next(blobStreamError)
+                            })
+
+                            blobStream.on('finish', () => {
+                                const publicURL = format(`https://storage.googleapis.com/${bucket.name}/${blob.name}`)
+                    
+                                connection.query(
+                                    'UPDATE Team SET Title = ?, Name = ?, Type = ?, Description = ?, LinkToHeader = ? WHERE IDTeam = ?',
+                                    [body.title, body.name, body.type, body.description, publicURL, body.idTeam],
+                                    (databaseError, databaseResults) => {
+                                        if (databaseError) {
+                                            res.sendStatus(500)
+                                            
+                                        } else {
+                                            res.sendStatus(200)
+                                        }
+                                    }
+                                )
+                            })
+
+                            blobStream.end(file.buffer)
+                        }
+                    })
+                }
             }
-        }
-    )
+        )
+
+    } else {
+        res.sendStatus(400)
+    }
 })
 
 app.get('/admin/get-picture', (req, res) => {
@@ -255,11 +309,12 @@ app.get('/admin/get-picture', (req, res) => {
 
     if (body?.idTeam) {
         connection.query(
-            'SELECT LinkToImage FROM Picture WHERE IDTeam = ?',
+            'SELECT * FROM Picture WHERE IDTeam = ?',
             [body.idTeam],
             (databaseError, databaseResults) => {
                 if (databaseError) {
                     res.sendStatus(500)
+
                 } else {
                     res.status(200).json(databaseResults)
                 }
@@ -271,46 +326,83 @@ app.get('/admin/get-picture', (req, res) => {
     }
 })
 
-app.post('/admin/upload-picture', multer.array('file'), (req, res, next) => {
-    const { body, files } = req
+app.post('/admin/upload-picture', multer.single('file'), (req, res, next) => {
+    const { body, file } = req
 
-    if (body?.idTeam && files.length != 0) {
-        console.log(files)
+    if (body?.idTeam && file?.size != 0) {
+        const blob = bucket.file(file.originalname)
+        const blobStream = blob.createWriteStream()
 
-        files.forEach((file) => {
-            const blob = bucket.file(file.originalname)
-            const blobStream = blob.createWriteStream()
-
-            blobStream.on('error', (blobStreamError) => {
-                next(blobStreamError)
-            })
-
-            blobStream.on('finish', () => {
-                const publicURL = format(`https://storage.googleapis.com/${bucket.name}/${blob.name}`)
-
-                connection.query(
-                    'INSERT INTO Picture (IDTeam, LinkToImage) values (?, ?)',
-                    [body.idTeam, publicURL],
-                    (databaseError, databaseResults) => {
-                        if (databaseError) {
-                            res.sendStatus(500)
-    
-                        } else {
-                            res.sendStatus(201)
-                        }
-                    }
-                )
-            })
-
-            blobStream.end(file.buffer)
+        blobStream.on('error', (blobStreamError) => {
+            next(blobStreamError)
         })
+
+        blobStream.on('finish', () => {
+            const publicURL = `https://storage.googleapis.com/${bucket.name}/${blob.name}`
+
+            connection.query(
+                'INSERT INTO Picture (IDTeam, LinkToImage) values (?, ?)',
+                [body.idTeam, publicURL],
+                (databaseError, databaseResults) => {
+                    if (databaseError) {
+                        res.sendStatus(500)
+
+                    } else {
+                        res.sendStatus(201)
+                    }
+                }
+            )
+        })
+
+        blobStream.end(file.buffer)
 
     } else {
         res.sendStatus(400)
     }
 })
 
-app.delete('/admin/delete-picture')
+app.delete('/admin/delete-picture', (req, res) => {
+    const { body } = req;
+
+    if (body?.idPicture) {
+        connection.query(
+            'SELECT LinkToImage FROM Picture WHERE IDPicture = ?',
+            [body.idPicture],
+            (databaseError, databaseResults) => {
+                if (databaseError) {
+                    res.sendStatus(500)
+
+                } else {
+                    const linkToImage = databaseResults[0].LinkToImage
+                    const fileName = linkToImage.substring(linkToImage.lastIndexOf('/') + 1)
+
+                    bucket.file(fileName).delete((deleteError, deleteAPIResponse) => {
+                        if (deleteError) {
+                            res.sendStatus(500)
+
+                        } else {
+                            connection.query(
+                                'DELETE FROM Picture WHERE IDPicture = ?',
+                                [body.idPicture],
+                                (databaseError, databaseResults) => {
+                                    if (databaseError) {
+                                        res.sendStatus(500)
+    
+                                    } else {
+                                        res.sendStatus(200)
+                                    }
+                                }
+                            )
+                        }
+                    })
+                }
+            }
+        )
+
+    } else {
+        res.sendStatus(400)
+    }
+})
 
 // User
 app.get('/user/login', (req, res) => {

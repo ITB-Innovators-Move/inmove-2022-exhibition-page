@@ -36,7 +36,7 @@ CREATE TABLE `picture` (
   `LinkToImage` varchar(512) NOT NULL,
   PRIMARY KEY (`IDPicture`),
   KEY `IDTeam` (`IDTeam`),
-  CONSTRAINT `picture_ibfk_1` FOREIGN KEY (`IDTeam`) REFERENCES `team` (`IDTeam`)
+  CONSTRAINT `picture_ibfk_1` FOREIGN KEY (`IDTeam`) REFERENCES `team` (`IDTeam`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -92,7 +92,7 @@ CREATE TABLE `voter` (
   UNIQUE KEY `Name` (`Name`),
   UNIQUE KEY `IDStudent` (`IDStudent`),
   KEY `IDTeam` (`IDTeam`),
-  CONSTRAINT `voter_ibfk_1` FOREIGN KEY (`IDTeam`) REFERENCES `team` (`IDTeam`)
+  CONSTRAINT `voter_ibfk_1` FOREIGN KEY (`IDTeam`) REFERENCES `team` (`IDTeam`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -114,4 +114,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2022-03-16  1:42:51
+-- Dump completed on 2022-03-21 17:28:25
