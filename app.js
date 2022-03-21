@@ -124,6 +124,7 @@ app.all('/admin/*', requireAdmin, (req, res, next) => {
 
 app.get('/admin/logout', (req, res) => {
     req.session.jwtTokenAdmin = null
+    res.sendStatus(200)
 })
 
 app.get('/admin/get-team', (req, res) => {
@@ -284,7 +285,7 @@ app.put('/admin/update-team', multer.single('file'), (req, res, next) => {
                                     (databaseError, databaseResults) => {
                                         if (databaseError) {
                                             res.sendStatus(500)
-                                            
+
                                         } else {
                                             res.sendStatus(200)
                                         }
@@ -473,6 +474,7 @@ app.all('/user/*', requireLogin, (req, res, next) => {
 
 app.get('/user/logout', (req, res) => {
     req.session.jwtTokenUser = null
+    res.sendStatus(200)
 })
 
 app.get('/user/get-team', (req, res) => {
