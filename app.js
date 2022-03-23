@@ -560,7 +560,7 @@ app.put('/user/update-vote-team', (req, res) => {
     }
 })
 
-app.get('*', (req, res) => {
+app.get('/*', (req, res) => {
     res.sendStatus(400)
 })
 
