@@ -16,7 +16,6 @@ const { Storage } = require('@google-cloud/storage')
 // Global Variable
 const app = express()
 
-const port = process.env.PORT || 3000
 const token = process.env.JWT_TOKEN
 const adminUsername = process.env.ADMIN_USERNAME
 const adminPassword = process.env.ADMIN_PASSWORD
@@ -565,6 +564,6 @@ app.get('*', (req, res) => {
 })
 
 // Run app on localhost
-app.listen(port, () => {
-    console.log(`App is running on port ${port}`)
+app.listen(process.env.PORT || 3000, () => {
+    console.log(`App is running on port ${this.address().port}`)
 })
