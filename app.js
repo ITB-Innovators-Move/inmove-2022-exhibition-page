@@ -560,6 +560,10 @@ app.put('/user/update-vote-team', (req, res) => {
     }
 })
 
+app.get('*', (req, res) => {
+    res.sendStatus(400)
+})
+
 // Run app on localhost
 app.listen(port, () => {
     console.log(`App is running on http://localhost:${port}`)
