@@ -16,7 +16,7 @@ const { Storage } = require('@google-cloud/storage')
 // Global Variable
 const app = express()
 
-const port = parseInt(process.env.PORT) || 3000
+const port = process.env.PORT || 3000
 const token = process.env.JWT_TOKEN
 const adminUsername = process.env.ADMIN_USERNAME
 const adminPassword = process.env.ADMIN_PASSWORD
@@ -560,7 +560,7 @@ app.put('/user/update-vote-team', (req, res) => {
     }
 })
 
-app.get('/*', (req, res) => {
+app.get('*', (req, res) => {
     res.sendStatus(400)
 })
 
