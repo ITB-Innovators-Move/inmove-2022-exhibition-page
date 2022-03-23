@@ -26,7 +26,7 @@ const connection = mysql.createConnection({
     host: process.env.HOST,
     user: process.env.USER,
     password: process.env.PASSWORD,
-    database: process.env.DATABASE
+    database: process.env.DATABASE,
 })
 
 const storage = new Storage({
@@ -48,9 +48,9 @@ app.use(bodyParser.urlencoded({
     extended: true
 }))
 app.use(bodyParser.json())
-app.use(cors({
-    origin: `http://localhost:${port}`
-}))
+// app.use(cors({
+//     origin: `http://localhost:${port}`
+// }))
 app.use(session({
     secret: process.env.SECRET_KEY,
     resave: false,
