@@ -564,6 +564,6 @@ app.get('*', (req, res) => {
 })
 
 // Run app on localhost
-app.listen(process.env.PORT || 3000, () => {
-    console.log(`App is running on port ${this.address().port}`)
+app.listen(process.env.PORT, () => {
+    console.log(`App is running on port ${process.env.PORT}`)
 })

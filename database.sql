@@ -33,7 +33,7 @@ DROP TABLE IF EXISTS `picture`;
 CREATE TABLE `picture` (
   `IDPicture` int unsigned NOT NULL AUTO_INCREMENT,
   `IDTeam` int unsigned NOT NULL,
-  `LinkToImage` varchar(512) NOT NULL,
+  `LinkToImage` varchar(255) NOT NULL,
   PRIMARY KEY (`IDPicture`),
   KEY `IDTeam` (`IDTeam`),
   CONSTRAINT `picture_ibfk_1` FOREIGN KEY (`IDTeam`) REFERENCES `team` (`IDTeam`) ON DELETE CASCADE
@@ -58,11 +58,11 @@ DROP TABLE IF EXISTS `team`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `team` (
   `IDTeam` int unsigned NOT NULL AUTO_INCREMENT,
-  `Title` varchar(256) NOT NULL,
-  `Name` varchar(256) NOT NULL,
+  `Title` varchar(255) NOT NULL,
+  `Name` varchar(255) NOT NULL,
   `Type` enum('Business Plan','Innovation Competition') NOT NULL,
   `Description` longtext NOT NULL,
-  `LinkToHeader` varchar(512) NOT NULL,
+  `LinkToHeader` varchar(255) NOT NULL,
   PRIMARY KEY (`IDTeam`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -85,7 +85,7 @@ DROP TABLE IF EXISTS `voter`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `voter` (
   `IDVoter` int unsigned NOT NULL AUTO_INCREMENT,
-  `Name` varchar(256) NOT NULL,
+  `Name` varchar(255) NOT NULL,
   `IDStudent` varchar(8) NOT NULL,
   `IDTeam` int unsigned DEFAULT NULL,
   PRIMARY KEY (`IDVoter`),
@@ -114,4 +114,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2022-03-21 17:28:25
+-- Dump completed on 2022-03-24  3:22:55
